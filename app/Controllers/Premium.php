@@ -25,12 +25,41 @@ class Premium extends BaseController
         $marital_statuses = $this->maritalStatuses();
         $all_genders = $this->genderItems();
         $employment_statuses = $this->employmentStatuses();
+        $id_types = $this->idTypes();
 
-        log_message('debug', 'Data passed to view: ' . json_encode($employment_statuses));die;
+        log_message('debug', 'Data passed to view: ' . json_encode($id_types));die;
         
         // return view('wsdl_view', ['data' => $marital_statuses]);
     }
+    public function idTypes()
+    {
+        try {
+            $client = new SoapClient($this->wsdl, $this->options);
+            $response = $client->GetIdTypeItems([
+                'p_LangID' => 'EN', // 
+                'p_WordCase' => 'PROPERCASE',
+            ]);
+            $responseArray = json_decode(json_encode($response), true);
+            // echo "<pre>", print_r($responseArray); die();
+            if (isset($responseArray['GetIDTypeItemsResult']['any'])) {
+                    // Get the 'any' content
+                    $anyString = $responseArray['GetIDTypeItemsResult']['any'];
+                    $anyString = '<root>' . $anyString . '</root>';
+                    $associativeArray = $this->processIDs($anyString);
+                    if (!empty($associativeArray)) {
+                        return $associativeArray;
+                    } else {
+                        return ['error' => 'Processed array is empty.'];
+                    }
+                } else {
+                    return ['error' => 'Expected keys not found in the response.'];
+                }
 
+        } catch (Exception $e) {
+            // Handle exceptions and log errors
+            return view('error_view', ['error' => $e->getMessage()]);
+        }
+    }
     public function employmentStatuses()
     {
         try {
@@ -167,6 +196,29 @@ class Premium extends BaseController
      * @param string $anyString
      * @return array
      */
+ private function processIDs($anyString) {
+        // log_message('debug', 'Raw XML content: ' . $anyString);die;
+    $anyString = '<root>' . $anyString . '</root>';
+    libxml_use_internal_errors(true);
+    $xml = simplexml_load_string($anyString);
+    if ($xml === false) {
+        $errors = libxml_get_errors();
+        foreach ($errors as $error) {
+            log_message('debug', 'XML Error: ' . $error->message);
+        }
+        return [];
+    }
+    $xml->registerXPathNamespace('diffgr', 'urn:schemas-microsoft-com:xml-diffgram-v1');
+    $id_types = $xml->xpath('//diffgr:diffgram/DocumentElement/IDTypes');
+    $array = [];
+    foreach ($id_types as $type) {
+        $array[] = [
+            'Value' => (string) $type->Value,
+            'Description' => (string) $type->Description,
+        ];
+    }
+    return $array;
+}
     private function processEmploymentStatus($anyString) {
         // log_message('debug', 'Raw XML content: ' . $anyString);
     $anyString = '<root>' . $anyString . '</root>';
