@@ -26,10 +26,65 @@ class Premium extends BaseController
         $all_genders = $this->genderItems();
         $employment_statuses = $this->employmentStatuses();
         $id_types = $this->idTypes();
+        $holder_relationships = $this->holderRelationships();
+        $calendar_months = $this->calendarMonths();
 
-        log_message('debug', 'Data passed to view: ' . json_encode($id_types));die;
+        log_message('debug', 'Data passed to view: ' . json_encode($calendar_months));die;
         
         // return view('wsdl_view', ['data' => $marital_statuses]);
+    }
+    public function calendarMonths()
+    {
+        try {
+            $client = new SoapClient($this->wsdl, $this->options);
+            $response = $client->    GetCalendarMonthsItems([
+                'p_WordCase' => 'PROPERCASE',
+            ]);
+            $responseArray = json_decode(json_encode($response), true);
+            // echo "<pre>", print_r($responseArray); die();
+            if (isset($responseArray['GetCalendarMonthsItemsResult']['any'])) {
+                    $anyString = $responseArray['GetCalendarMonthsItemsResult']['any'];
+                    $anyString = '<root>' . $anyString . '</root>';
+                    $associativeArray = $this->processCalendar($anyString);
+                    if (!empty($associativeArray)) {
+                        return $associativeArray;
+                    } else {
+                        return ['error' => 'Processed array is empty.'];
+                    }
+                } else {
+                    return ['error' => 'Expected keys not found in the response.'];
+                }
+
+        } catch (Exception $e) {
+            return view('error_view', ['error' => $e->getMessage()]);
+        }
+    }
+    public function holderRelationships()
+    {
+        try {
+            $client = new SoapClient($this->wsdl, $this->options);
+            $response = $client-> GetPolicyHolderRelationItems([
+                'p_LangID' => 'EN', // 
+                'p_WordCase' => 'PROPERCASE',
+            ]);
+            $responseArray = json_decode(json_encode($response), true);
+            // echo "<pre>", print_r($responseArray); die();
+            if (isset($responseArray['GetPolicyHolderRelationItemsResult']['any'])) {
+                    $anyString = $responseArray['GetPolicyHolderRelationItemsResult']['any'];
+                    $anyString = '<root>' . $anyString . '</root>';
+                    $associativeArray = $this->processRelationships($anyString);
+                    if (!empty($associativeArray)) {
+                        return $associativeArray;
+                    } else {
+                        return ['error' => 'Processed array is empty.'];
+                    }
+                } else {
+                    return ['error' => 'Expected keys not found in the response.'];
+                }
+
+        } catch (Exception $e) {
+            return view('error_view', ['error' => $e->getMessage()]);
+        }
     }
     public function idTypes()
     {
@@ -196,6 +251,52 @@ class Premium extends BaseController
      * @param string $anyString
      * @return array
      */
+    private function processCalendar($anyString) {
+        // log_message('debug', 'Raw XML content: ' . $anyString);die;
+    $anyString = '<root>' . $anyString . '</root>';
+    libxml_use_internal_errors(true);
+    $xml = simplexml_load_string($anyString);
+    if ($xml === false) {
+        $errors = libxml_get_errors();
+        foreach ($errors as $error) {
+            log_message('debug', 'XML Error: ' . $error->message);
+        }
+        return [];
+    }
+    $xml->registerXPathNamespace('diffgr', 'urn:schemas-microsoft-com:xml-diffgram-v1');
+    $calendar_months = $xml->xpath('//diffgr:diffgram/DocumentElement/CalendarMonths');
+    $array = [];
+    foreach ($calendar_months as $months) {
+        $array[] = [
+            'Value' => (string) $months->Value,
+            'Description' => (string) $months->Description,
+        ];
+    }
+    return $array;
+}
+    private function processRelationships($anyString) {
+        // log_message('debug', 'Raw XML content: ' . $anyString);die;
+    $anyString = '<root>' . $anyString . '</root>';
+    libxml_use_internal_errors(true);
+    $xml = simplexml_load_string($anyString);
+    if ($xml === false) {
+        $errors = libxml_get_errors();
+        foreach ($errors as $error) {
+            log_message('debug', 'XML Error: ' . $error->message);
+        }
+        return [];
+    }
+    $xml->registerXPathNamespace('diffgr', 'urn:schemas-microsoft-com:xml-diffgram-v1');
+    $id_types = $xml->xpath('//diffgr:diffgram/DocumentElement/IDTypes');
+    $array = [];
+    foreach ($id_types as $type) {
+        $array[] = [
+            'Value' => (string) $type->Value,
+            'Description' => (string) $type->Description,
+        ];
+    }
+    return $array;
+}
  private function processIDs($anyString) {
         // log_message('debug', 'Raw XML content: ' . $anyString);die;
     $anyString = '<root>' . $anyString . '</root>';
