@@ -7,21 +7,25 @@
 </head>
 <body>
     <h1>WSDL Response</h1>
-    <?php if (empty($data)): ?>
-    <p>No data available</p>
-<?php else: ?>
-    <table border="1">
-        <tr>
-            <th>Value</th>
-            <th>Description</th>
-        </tr>
-        <?php foreach ($data as $item): ?>
+    <?php if (!empty($data)): ?>
+    <table>
+        <thead>
             <tr>
-                <td><?= htmlspecialchars($item['Value']) ?></td>
-                <td><?= htmlspecialchars($item['Description']) ?></td>
+                <th>Value</th>
+                <th>Description</th>
             </tr>
-        <?php endforeach; ?>
+        </thead>
+        <tbody>
+            <?php foreach ($data as $item): ?>
+                <tr>
+                    <td><?= esc($item['Value']) ?></td>
+                    <td><?= esc($item['Description']) ?></td>
+                </tr>
+            <?php endforeach; ?>
+        </tbody>
     </table>
+<?php else: ?>
+    <p>No data available.</p>
 <?php endif; ?>
 
 </body>

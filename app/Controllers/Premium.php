@@ -7,14 +7,61 @@ use Exception;
 
 class Premium extends BaseController
 {
-    public function index(){
-        // all titles
-        $all_titles = $this->titleItems();
-        // log_message('debug', 'Data passed to view: ' . json_encode($all_titles));die;
-        
-        return view('wsdl_view', ['data' => $all_titles]);
+    protected $wsdl = 'https://api-uat.tihsa.co.za/QuickQuotes/GenericControls.asmx?wsdl';
+    protected $options;
+
+    public function __construct()
+    {
+        $this->options = [
+            'login' => getenv('TELE_USERNAME'), 
+            'password' => getenv('TELE_PASSWORD'),
+            'trace' => true, 
+            'exceptions' => true,
+        ];
     }
 
+    public function index(){
+        // all titles
+        // $all_titles = $this->titleItems();
+        $marital_statuses = $this->maritalStatuses();
+
+        // log_message('debug', 'Data passed to view: ' . json_encode($marital_statuses));die;
+        
+        return view('wsdl_view', ['data' => $marital_statuses]);
+    }
+
+    public function maritalStatuses()
+    {
+        try {
+            $client = new SoapClient($this->wsdl, $this->options);
+            $response = $client-> GetMaritalStatusItems([
+                'p_LangID' => 'EN', // 
+                'p_WordCase' => 'PROPERCASE',
+            ]);
+            $responseArray = json_decode(json_encode($response), true);
+            if (isset($responseArray['GetMaritalStatusItemsResult']['any'])) {
+                    // Get the 'any' content
+                    $anyString = $responseArray['GetMaritalStatusItemsResult']['any'];
+
+                    
+                    $anyString = '<root>' . $anyString . '</root>';
+
+                   
+                    $associativeArray = $this->processMarital($anyString);
+                    if (!empty($associativeArray)) {
+                        return $associativeArray;
+                    } else {
+                        return ['error' => 'Processed array is empty.'];
+                    }
+                } else {
+                    return ['error' => 'Expected keys not found in the response.'];
+                }
+
+        } catch (Exception $e) {
+            // Handle exceptions and log errors
+            return view('error_view', ['error' => $e->getMessage()]);
+        }
+    }
     public function titleItems()
     {
         try {
@@ -63,6 +110,7 @@ class Premium extends BaseController
      */
  private function processAnyString(string $anyString): array
 {
+    
     $result = [];
 
     try {
@@ -90,6 +138,53 @@ class Premium extends BaseController
 
     return $result;
 }
+
+public function processMarital($anyString) {
+    // Log the raw XML string
+    log_message('debug', 'Raw XML content: ' . $anyString);
+
+    // Wrap in <root> tags to make it valid XML
+    $anyString = '<root>' . $anyString . '</root>';
+
+    // Log the updated XML string
+    log_message('debug', 'Wrapped XML content: ' . $anyString);
+
+    // Attempt to parse XML with error handling
+    libxml_use_internal_errors(true);
+    $xml = simplexml_load_string($anyString);
+    if ($xml === false) {
+        $errors = libxml_get_errors();
+        foreach ($errors as $error) {
+            log_message('debug', 'XML Error: ' . $error->message);
+        }
+        return [];
+    }
+
+    // Register namespaces if necessary
+    $xml->registerXPathNamespace('diffgr', 'urn:schemas-microsoft-com:xml-diffgram-v1');
+
+    // Query for Titles
+    $statuses = $xml->xpath('//diffgr:diffgram/DocumentElement/MaritalStatus');
+
+    // Log the result of the XPath query
+    log_message('debug', 'Marital Statuses found by XPath: ' . print_r($statuses, true));
+
+    // Convert to associative array
+    $array = [];
+    foreach ($statuses as $status) {
+        $array[] = [
+            'Value' => (string) $status->Value,
+            'Description' => (string) $status->Description,
+        ];
+    }
+
+    // Log the final array
+    log_message('debug', 'Decoded Array: ' . print_r($array, true));
+
+    return $array;
+}
+
+
     /**
      * Map a title abbreviation to a label.
      *
