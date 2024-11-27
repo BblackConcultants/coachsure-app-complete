@@ -24,12 +24,42 @@ class Premium extends BaseController
         $all_titles = $this->titleItems();
         $marital_statuses = $this->maritalStatuses();
         $all_genders = $this->genderItems();
+        $employment_statuses = $this->employmentStatuses();
 
-        log_message('debug', 'Data passed to view: ' . json_encode($all_genders));die;
+        log_message('debug', 'Data passed to view: ' . json_encode($employment_statuses));die;
         
         // return view('wsdl_view', ['data' => $marital_statuses]);
     }
 
+    public function employmentStatuses()
+    {
+        try {
+            $client = new SoapClient($this->wsdl, $this->options);
+            $response = $client-> GetEmploymentStatusItems([
+                'p_LangID' => 'EN', // 
+                'p_WordCase' => 'PROPERCASE',
+            ]);
+            $responseArray = json_decode(json_encode($response), true);
+            // echo "<pre>", print_r($responseArray); die();
+            if (isset($responseArray['GetEmploymentStatusItemsResult']['any'])) {
+                    // Get the 'any' content
+                    $anyString = $responseArray['GetEmploymentStatusItemsResult']['any'];
+                    $anyString = '<root>' . $anyString . '</root>';
+                    $associativeArray = $this->processEmploymentStatus($anyString);
+                    if (!empty($associativeArray)) {
+                        return $associativeArray;
+                    } else {
+                        return ['error' => 'Processed array is empty.'];
+                    }
+                } else {
+                    return ['error' => 'Expected keys not found in the response.'];
+                }
+
+        } catch (Exception $e) {
+            // Handle exceptions and log errors
+            return view('error_view', ['error' => $e->getMessage()]);
+        }
+    }
     public function genderItems()
     {
         try {
@@ -137,17 +167,9 @@ class Premium extends BaseController
      * @param string $anyString
      * @return array
      */
-private function processGender($anyString) {
-    // Log the raw XML string
-    log_message('debug', 'Raw XML content: ' . $anyString);
-
-    // Wrap in <root> tags to make it valid XML
+    private function processEmploymentStatus($anyString) {
+        // log_message('debug', 'Raw XML content: ' . $anyString);
     $anyString = '<root>' . $anyString . '</root>';
-
-    // Log the updated XML string
-    log_message('debug', 'Wrapped XML content: ' . $anyString);
-
-    // Attempt to parse XML with error handling
     libxml_use_internal_errors(true);
     $xml = simplexml_load_string($anyString);
     if ($xml === false) {
@@ -157,17 +179,30 @@ private function processGender($anyString) {
         }
         return [];
     }
-
-    // Register namespaces if necessary
     $xml->registerXPathNamespace('diffgr', 'urn:schemas-microsoft-com:xml-diffgram-v1');
-
-    // Query for Titles
+    $emp_statuses = $xml->xpath('//diffgr:diffgram/DocumentElement/EmploymentStatus');
+    $array = [];
+    foreach ($emp_statuses as $status) {
+        $array[] = [
+            'Value' => (string) $status->Value,
+            'Description' => (string) $status->Description,
+        ];
+    }
+    return $array;
+}
+private function processGender($anyString) {
+    $anyString = '<root>' . $anyString . '</root>';
+    libxml_use_internal_errors(true);
+    $xml = simplexml_load_string($anyString);
+    if ($xml === false) {
+        $errors = libxml_get_errors();
+        foreach ($errors as $error) {
+            log_message('debug', 'XML Error: ' . $error->message);
+        }
+        return [];
+    }
+    $xml->registerXPathNamespace('diffgr', 'urn:schemas-microsoft-com:xml-diffgram-v1');
     $genders = $xml->xpath('//diffgr:diffgram/DocumentElement/Gender');
-
-    // Log the result of the XPath query
-    log_message('debug', 'Genders found by XPath: ' . print_r($genders, true));
-
-    // Convert to associative array
     $array = [];
     foreach ($genders as $gender) {
         $array[] = [
@@ -175,29 +210,18 @@ private function processGender($anyString) {
             'Description' => (string) $gender->Description,
         ];
     }
-
-    // Log the final array
-    log_message('debug', 'Decoded Array: ' . print_r($array, true));
-
     return $array;
 }
 
 private function processAnyString(string $anyString): array
 {
-    
     $result = [];
 
     try {
-        // Parse the XML string
         $xml = new \SimpleXMLElement($anyString);
-        // Register namespaces used in the XML
         $xml->registerXPathNamespace('diffgr', 'urn:schemas-microsoft-com:xml-diffgram-v1');
         $xml->registerXPathNamespace('msdata', 'urn:schemas-microsoft-com:xml-msdata');
-
-        // Navigate to the `diffgram` and `DocumentElement/Titles` nodes
         $titles = $xml->xpath('//diffgr:diffgram/DocumentElement/Titles');
-
-        // Iterate over each `<Titles>` node and extract the `Value` and `Description`
         foreach ($titles as $title) {
             $result[] = [
                 'Value' => (string) $title->Value,
@@ -205,25 +229,14 @@ private function processAnyString(string $anyString): array
             ];
         }
     } catch (\Exception $e) {
-        // Handle errors in parsing XML
         log_message('error', 'Failed to parse XML: ' . $e->getMessage());
         $result = ['error' => 'Invalid XML format'];
     }
-
     return $result;
 }
 
 public function processMarital($anyString) {
-    // Log the raw XML string
-    log_message('debug', 'Raw XML content: ' . $anyString);
-
-    // Wrap in <root> tags to make it valid XML
     $anyString = '<root>' . $anyString . '</root>';
-
-    // Log the updated XML string
-    log_message('debug', 'Wrapped XML content: ' . $anyString);
-
-    // Attempt to parse XML with error handling
     libxml_use_internal_errors(true);
     $xml = simplexml_load_string($anyString);
     if ($xml === false) {
@@ -233,17 +246,8 @@ public function processMarital($anyString) {
         }
         return [];
     }
-
-    // Register namespaces if necessary
     $xml->registerXPathNamespace('diffgr', 'urn:schemas-microsoft-com:xml-diffgram-v1');
-
-    // Query for Titles
     $statuses = $xml->xpath('//diffgr:diffgram/DocumentElement/MaritalStatus');
-
-    // Log the result of the XPath query
-    log_message('debug', 'Marital Statuses found by XPath: ' . print_r($statuses, true));
-
-    // Convert to associative array
     $array = [];
     foreach ($statuses as $status) {
         $array[] = [
@@ -251,10 +255,6 @@ public function processMarital($anyString) {
             'Description' => (string) $status->Description,
         ];
     }
-
-    // Log the final array
-    log_message('debug', 'Decoded Array: ' . print_r($array, true));
-
     return $array;
 }
 
