@@ -28,10 +28,35 @@ class Premium extends BaseController
         $id_types = $this->idTypes();
         $holder_relationships = $this->holderRelationships();
         $calendar_months = $this->calendarMonths();
+        $year_range = $this->yearRange();
 
-        log_message('debug', 'Data passed to view: ' . json_encode($calendar_months));die;
+        log_message('debug', 'Data passed to view: ' . json_encode($year_range));die;
         
         // return view('wsdl_view', ['data' => $marital_statuses]);
+    }
+    public function yearRange()
+    {
+        try {
+            $client = new SoapClient($this->wsdl, $this->options);
+            $response = $client-> GetCalendarYearRangeItems();
+            $responseArray = json_decode(json_encode($response), true);
+            // echo "<pre>", print_r($responseArray); die();
+            if (isset($responseArray['GetCalendarYearRangeItemsResult']['any'])) {
+                    $anyString = $responseArray['GetCalendarYearRangeItemsResult']['any'];
+                    $anyString = '<root>' . $anyString . '</root>';
+                    $associativeArray = $this->processRange($anyString);
+                    if (!empty($associativeArray)) {
+                        return $associativeArray;
+                    } else {
+                        return ['error' => 'Processed array is empty.'];
+                    }
+                } else {
+                    return ['error' => 'Expected keys not found in the response.'];
+                }
+
+        } catch (Exception $e) {
+            return view('error_view', ['error' => $e->getMessage()]);
+        }
     }
     public function calendarMonths()
     {
@@ -251,6 +276,30 @@ class Premium extends BaseController
      * @param string $anyString
      * @return array
      */
+    private function processRange($anyString) {
+        // log_message('debug', 'Raw XML content: ' . $anyString);die;
+    $anyString = '<root>' . $anyString . '</root>';
+    libxml_use_internal_errors(true);
+    $xml = simplexml_load_string($anyString);
+    if ($xml === false) {
+        $errors = libxml_get_errors();
+        foreach ($errors as $error) {
+            log_message('debug', 'XML Error: ' . $error->message);
+        }
+        return [];
+    }
+    $xml->registerXPathNamespace('diffgr', 'urn:schemas-microsoft-com:xml-diffgram-v1');
+    $year_range = $xml->xpath('//diffgr:diffgram/DocumentElement/YearRange');
+    $array = [];
+    foreach ($year_range as $range) {
+        $array[] = [
+            'Value' => (string) $range->Value,
+            'Description' => (string) $range->Description,
+        ];
+    }
+    return $array;
+}
+
     private function processCalendar($anyString) {
         // log_message('debug', 'Raw XML content: ' . $anyString);die;
     $anyString = '<root>' . $anyString . '</root>';
