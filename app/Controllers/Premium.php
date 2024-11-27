@@ -21,15 +21,44 @@ class Premium extends BaseController
     }
 
     public function index(){
-        // all titles
-        // $all_titles = $this->titleItems();
+        $all_titles = $this->titleItems();
         $marital_statuses = $this->maritalStatuses();
+        $all_genders = $this->genderItems();
 
-        // log_message('debug', 'Data passed to view: ' . json_encode($marital_statuses));die;
+        log_message('debug', 'Data passed to view: ' . json_encode($all_genders));die;
         
-        return view('wsdl_view', ['data' => $marital_statuses]);
+        // return view('wsdl_view', ['data' => $marital_statuses]);
     }
 
+    public function genderItems()
+    {
+        try {
+            $client = new SoapClient($this->wsdl, $this->options);
+            $response = $client->GetGenderItems([
+                'p_LangID' => 'EN', // 
+                'p_WordCase' => 'PROPERCASE',
+            ]);
+            $responseArray = json_decode(json_encode($response), true);
+            // echo "<pre>", print_r($responseArray); die();
+            if (isset($responseArray['GetGenderItemsResult']['any'])) {
+                    // Get the 'any' content
+                    $anyString = $responseArray['GetGenderItemsResult']['any'];
+                    $anyString = '<root>' . $anyString . '</root>';
+                    $associativeArray = $this->processGender($anyString);
+                    if (!empty($associativeArray)) {
+                        return $associativeArray;
+                    } else {
+                        return ['error' => 'Processed array is empty.'];
+                    }
+                } else {
+                    return ['error' => 'Expected keys not found in the response.'];
+                }
+
+        } catch (Exception $e) {
+            // Handle exceptions and log errors
+            return view('error_view', ['error' => $e->getMessage()]);
+        }
+    }
     public function maritalStatuses()
     {
         try {
@@ -108,7 +137,52 @@ class Premium extends BaseController
      * @param string $anyString
      * @return array
      */
- private function processAnyString(string $anyString): array
+private function processGender($anyString) {
+    // Log the raw XML string
+    log_message('debug', 'Raw XML content: ' . $anyString);
+
+    // Wrap in <root> tags to make it valid XML
+    $anyString = '<root>' . $anyString . '</root>';
+
+    // Log the updated XML string
+    log_message('debug', 'Wrapped XML content: ' . $anyString);
+
+    // Attempt to parse XML with error handling
+    libxml_use_internal_errors(true);
+    $xml = simplexml_load_string($anyString);
+    if ($xml === false) {
+        $errors = libxml_get_errors();
+        foreach ($errors as $error) {
+            log_message('debug', 'XML Error: ' . $error->message);
+        }
+        return [];
+    }
+
+    // Register namespaces if necessary
+    $xml->registerXPathNamespace('diffgr', 'urn:schemas-microsoft-com:xml-diffgram-v1');
+
+    // Query for Titles
+    $genders = $xml->xpath('//diffgr:diffgram/DocumentElement/Gender');
+
+    // Log the result of the XPath query
+    log_message('debug', 'Genders found by XPath: ' . print_r($genders, true));
+
+    // Convert to associative array
+    $array = [];
+    foreach ($genders as $gender) {
+        $array[] = [
+            'Value' => (string) $gender->Value,
+            'Description' => (string) $gender->Description,
+        ];
+    }
+
+    // Log the final array
+    log_message('debug', 'Decoded Array: ' . print_r($array, true));
+
+    return $array;
+}
+
+private function processAnyString(string $anyString): array
 {
     
     $result = [];
