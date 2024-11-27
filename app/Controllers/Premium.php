@@ -30,10 +30,68 @@ class Premium extends BaseController
         $calendar_months = $this->calendarMonths();
         $year_range = $this->yearRange();
         $calendar_days = $this->calendarDays();
+        // $res_suburbs = $this->residentialSuburbs($hay='joh',$type='Residential');
+        $access_controls = $this->accessControlTypes();
 
-        log_message('debug', 'Data passed to view: ' . json_encode($calendar_days));die;
+        log_message('debug', 'Data passed to view: ' . json_encode($access_controls));die;
         
         // return view('wsdl_view', ['data' => $marital_statuses]);
+    }
+    public function accessControlTypes()
+    {
+        try {
+            $client = new SoapClient($this->wsdl, $this->options);
+            $response = $client->GetAccessControlTypeItems([
+                'p_LangID' => 'EN',
+                'p_WordCase' => 'PROPERCASE',
+            ]);
+            $responseArray = json_decode(json_encode($response), true);
+            // echo "<pre>", print_r($responseArray); die();
+            if (isset($responseArray['GetAccessControlTypeItemsResult']['any'])) {
+                    $anyString = $responseArray['GetAccessControlTypeItemsResult']['any'];
+                    $anyString = '<root>' . $anyString . '</root>';
+                    $associativeArray = $this->processAccessControl($anyString);
+                    if (!empty($associativeArray)) {
+                        return $associativeArray;
+                    } else {
+                        return ['error' => 'Processed array is empty.'];
+                    }
+                } else {
+                    return ['error' => 'Expected keys not found in the response.'];
+                }
+
+        } catch (Exception $e) {
+            return view('error_view', ['error' => $e->getMessage()]);
+        }
+    }
+    public function residentialSuburbs($hay, $address_type)
+    {
+        try {
+            $client = new SoapClient($this->wsdl, $this->options);
+            $response = $client->    GetSuburbs([
+                'LanguageID' => 'EN',
+                'p_WordCase' => 'PROPERCASE',
+                'p_SuburbSearchText' => $hay,
+                'p_AddressType' => 'Postal address',
+            ]);
+            $responseArray = json_decode(json_encode($response), true);
+            echo "<pre>", print_r($responseArray); die();
+            if (isset($responseArray['GetCalendarDayRangeItemsResult']['any'])) {
+                    $anyString = $responseArray['GetCalendarDayRangeItemsResult']['any'];
+                    $anyString = '<root>' . $anyString . '</root>';
+                    $associativeArray = $this->processDays($anyString);
+                    if (!empty($associativeArray)) {
+                        return $associativeArray;
+                    } else {
+                        return ['error' => 'Processed array is empty.'];
+                    }
+                } else {
+                    return ['error' => 'Expected keys not found in the response.'];
+                }
+
+        } catch (Exception $e) {
+            return view('error_view', ['error' => $e->getMessage()]);
+        }
     }
     public function calendarDays()
     {
@@ -301,6 +359,29 @@ class Premium extends BaseController
      * @param string $anyString
      * @return array
      */
+    private function processAccessControl($anyString) {
+        // log_message('debug', 'Raw XML content: ' . $anyString);die;
+    $anyString = '<root>' . $anyString . '</root>';
+    libxml_use_internal_errors(true);
+    $xml = simplexml_load_string($anyString);
+    if ($xml === false) {
+        $errors = libxml_get_errors();
+        foreach ($errors as $error) {
+            log_message('debug', 'XML Error: ' . $error->message);
+        }
+        return [];
+    }
+    $xml->registerXPathNamespace('diffgr', 'urn:schemas-microsoft-com:xml-diffgram-v1');
+    $access_controls = $xml->xpath('//diffgr:diffgram/DocumentElement/AccessControl');
+    $array = [];
+    foreach ($access_controls as $control) {
+        $array[] = [
+            'Value' => (string) $control->Value,
+            'Description' => (string) $control->Description,
+        ];
+    }
+    return $array;
+}
      private function processDays($anyString) {
         // log_message('debug', 'Raw XML content: ' . $anyString);die;
     $anyString = '<root>' . $anyString . '</root>';
