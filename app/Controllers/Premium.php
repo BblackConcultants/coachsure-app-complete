@@ -21,37 +21,60 @@ class Premium extends BaseController
     }
 
     public function index(){
-        $all_titles = $this->titleItems();
-        $marital_statuses = $this->maritalStatuses();
-        $all_genders = $this->genderItems();
-        $employment_statuses = $this->employmentStatuses();
-        $id_types = $this->idTypes();
-        $holder_relationships = $this->holderRelationships();
-        $calendar_months = $this->calendarMonths();
-        $year_range = $this->yearRange();
-        $calendar_days = $this->calendarDays();
+        // $all_titles = $this->titleItems();
+        // $marital_statuses = $this->maritalStatuses();
+        // $all_genders = $this->genderItems();
+        // $employment_statuses = $this->employmentStatuses();
+        // $id_types = $this->idTypes();
+        // $holder_relationships = $this->holderRelationships();
+        // $calendar_months = $this->calendarMonths();
+        // $year_range = $this->yearRange();
+        // $calendar_days = $this->calendarDays();
         // $res_suburbs = $this->residentialSuburbs($hay='joh',$type='Residential');
-        $access_controls = $this->accessControlTypes();
-        $geyser_loss = $this->geyserLossItems();
-        $geyser_heat_sources = $this->geyserHeatSources();
-        $geyser_locations = $this->geyserLocations();
-        $vehicle_years = $this->vehicleYears();
-        $vehicle_makes = $this->vehicleMakes();
-        $vehicle_models = $this->vehicleModels();
-        $vehicle_descriptions = $this->vehicleDescriptions();
-        $vehicle_mnm = $this->vehicleMNM();
-        $sound_system_insured = $this->soundSystems();
-        $cover_types = $this->coverTypes();
-        $cover_type_with_saver = $this->coverTypesWithSaver();
-        $overnight_parking_facility = $this->overnightParkingFacility();
-        $vehicle_use = $this->vehicleUse();
-        $vehicle_hire_options = $this->vehicleHireOptions();
-        $driver_licence_type = $this->driverLicenceType();
-        $motor_ncb = $this->motorNCB();
-        $motor_insured_items = $this->motorInsuredItems();
-        $vehicle_type = $this->vehicleType();
+        // $access_controls = $this->accessControlTypes();
+        // $geyser_loss = $this->geyserLossItems();
+        // $geyser_heat_sources = $this->geyserHeatSources();
+        // $geyser_locations = $this->geyserLocations();
+        // $vehicle_years = $this->vehicleYears();
+        // $vehicle_makes = $this->vehicleMakes();
+        // $vehicle_models = $this->vehicleModels();
+        // $vehicle_types = $this->vehicleTypes();
+        // $vehicle_descriptions = $this->vehicleDescriptions();
+        // $vehicle_mnm = $this->vehicleMNM();
+        // $sound_system_insured = $this->soundSystems();
+        // $cover_types = $this->coverTypes();
+        // $cover_type_with_saver = $this->coverTypesWithSaver();
+        // $overnight_parking_facility = $this->overnightParkingFacility();
+        // $vehicle_use = $this->vehicleUse();
+        // $vehicle_hire_options = $this->vehicleHireOptions();
+        // $driver_licence_type = $this->driverLicenceType();
+        // $motor_ncb = $this->motorNCB();
+        // $motor_insured_items = $this->motorInsuredItems();
+        // $motor_tracker_options = $this->motorTrackerOptions();
+        // $saver_accident_cover_options = $this->saverAccidentCoverOptions();
+        // $saver_accident_cover_options_with_vehicle_values = $this->saverAccidentCoverOptionsWithVehicleValues();
+        // $vehicle_colours = $this->vehicleColors();
+        // $vehicle_paint_types = $this->vehiclePaintTypes();
 
-        log_message('debug', 'Data passed to view: ' . json_encode($vehicle_type));die;
+        // Motorbike Specific Methods
+        // $motorbike_registered_years = $this->motorbikeRegisteredYears();
+        // $motorbike_makes = $this->motorbikemakes();
+        // $motorbike_descriptions = $this->motorbikeDescriptions();
+        // // caravan specific methods
+        // $caravan_registered_years = $this->caravanRegisteredYears();
+        // $caravan_makes = $this->caravanMakes();
+
+        // trailer specific methods
+        // $trailer_registered_years = $this->trailerRegisteredYears();
+        // $trailer_makes = $this->trailerMakes();
+
+        // Home stuff
+        // $building_structures = $this->buildingStructures();
+        // $area_types = $this->areaTypes();
+        // $roof_types = $this->roofTypes();
+        // 
+
+        log_message('debug', 'Data passed to view: ' . json_encode($vehicle_types));die;
         
         // return view('wsdl_view', ['data' => $marital_statuses]);
     }
@@ -60,20 +83,398 @@ class Premium extends BaseController
         $functions = $soapClient->__getFunctions();
         echo "<pre>", print_r($functions);
     }
-    public function vehicleType($key = 7128089)
+    // home stuff
+    public function roofTypes()
     {
         try {
             $client = new SoapClient($this->wsdl, $this->options);
-            $response = $client->GetVehicleType([
-                "p_VehicleKey" => $key,
+            $response = $client->GeRoofTypeItems([
+                "p_LangID" => 'EN',
+                "p_WordCase" => 'PROPERCASE',
             ]);
-            // log_message('debug', 'Raw Response: ' . print_r($response, true));die;
             $responseArray = json_decode(json_encode($response), true);
             // echo "<pre>", print_r($responseArray); die();
-            if (isset($responseArray['GetVehicleTypeResult'])) {
-                    $anyString = $responseArray['GetVehicleTypeResult'];
+            if (isset($responseArray['GeRoofTypeItemsResult']['any'])) {
+                    $anyString = $responseArray['GeRoofTypeItemsResult']['any'];
                     $anyString = '<root>' . $anyString . '</root>';
-                    $associativeArray = $this->processVehicleType($anyString);
+                    $associativeArray = $this->processRoofTypes($anyString);
+                    if (!empty($associativeArray)) {
+                        return $associativeArray;
+                    } else {
+                        return ['error' => 'Processed array is empty.'];
+                    }
+                } else {
+                    return ['error' => 'Expected keys not found in the response.'];
+                }
+
+        } catch (Exception $e) {
+            return view('error_view', ['error' => $e->getMessage()]);
+        }
+    }
+    public function areaTypes()
+    {
+        try {
+            $client = new SoapClient($this->wsdl, $this->options);
+            $response = $client->GetAreaTypeItems([
+                "p_LangID" => 'EN',
+                "p_WordCase" => 'PROPERCASE',
+            ]);
+            $responseArray = json_decode(json_encode($response), true);
+            // echo "<pre>", print_r($responseArray); die();
+            if (isset($responseArray['GetAreaTypeItemsResult']['any'])) {
+                    $anyString = $responseArray['GetAreaTypeItemsResult']['any'];
+                    $anyString = '<root>' . $anyString . '</root>';
+                    $associativeArray = $this->processAreaTypes($anyString);
+                    if (!empty($associativeArray)) {
+                        return $associativeArray;
+                    } else {
+                        return ['error' => 'Processed array is empty.'];
+                    }
+                } else {
+                    return ['error' => 'Expected keys not found in the response.'];
+                }
+
+        } catch (Exception $e) {
+            return view('error_view', ['error' => $e->getMessage()]);
+        }
+    }
+    public function buildingStructures()
+    {
+        try {
+            $client = new SoapClient($this->wsdl, $this->options);
+            $response = $client->GetBuildingStructureItems([
+                "p_LangID" => 'EN',
+                "p_WordCase" => 'PROPERCASE',
+            ]);
+            $responseArray = json_decode(json_encode($response), true);
+            // echo "<pre>", print_r($responseArray); die();
+            if (isset($responseArray['GetBuildingStructureItemsResult']['any'])) {
+                    $anyString = $responseArray['GetBuildingStructureItemsResult']['any'];
+                    $anyString = '<root>' . $anyString . '</root>';
+                    $associativeArray = $this->processBuildingStructures($anyString);
+                    if (!empty($associativeArray)) {
+                        return $associativeArray;
+                    } else {
+                        return ['error' => 'Processed array is empty.'];
+                    }
+                } else {
+                    return ['error' => 'Expected keys not found in the response.'];
+                }
+
+        } catch (Exception $e) {
+            return view('error_view', ['error' => $e->getMessage()]);
+        }
+    }
+    // trailers
+    public function trailerMakes()
+    {
+        try {
+            $client = new SoapClient($this->wsdl, $this->options);
+            $response = $client->GetTrailerMakes([
+                "p_LangID" => 'EN',
+                "p_WordCase" => 'PROPERCASE',
+            ]);
+            $responseArray = json_decode(json_encode($response), true);
+            // echo "<pre>", print_r($responseArray); die();
+            if (isset($responseArray['GetTrailerMakesResult']['any'])) {
+                    $anyString = $responseArray['GetTrailerMakesResult']['any'];
+                    $anyString = '<root>' . $anyString . '</root>';
+                    $associativeArray = $this->processTrailerMakes($anyString);
+                    if (!empty($associativeArray)) {
+                        return $associativeArray;
+                    } else {
+                        return ['error' => 'Processed array is empty.'];
+                    }
+                } else {
+                    return ['error' => 'Expected keys not found in the response.'];
+                }
+
+        } catch (Exception $e) {
+            return view('error_view', ['error' => $e->getMessage()]);
+        }
+    }
+    public function trailerRegisteredYears()
+    {
+        try {
+            $client = new SoapClient($this->wsdl, $this->options);
+            $response = $client->GetTrailerRegisteredYears();
+            $responseArray = json_decode(json_encode($response), true);
+            // echo "<pre>", print_r($responseArray); die();
+            if (isset($responseArray['GetTrailerRegisteredYearsResult']['any'])) {
+                    $anyString = $responseArray['GetTrailerRegisteredYearsResult']['any'];
+                    $anyString = '<root>' . $anyString . '</root>';
+                    $associativeArray = $this->processTrailerRegisteredYears($anyString);
+                    if (!empty($associativeArray)) {
+                        return $associativeArray;
+                    } else {
+                        return ['error' => 'Processed array is empty.'];
+                    }
+                } else {
+                    return ['error' => 'Expected keys not found in the response.'];
+                }
+
+        } catch (Exception $e) {
+            return view('error_view', ['error' => $e->getMessage()]);
+        }
+    }
+    // caravans
+    public function caravanMakes()
+    {
+        try {
+            $client = new SoapClient($this->wsdl, $this->options);
+            $response = $client->GetCaravanMakes(
+                [
+                    "p_LangID" => 'EN',
+                    "p_WordCase" => 'PROPERCASE',
+                ]
+            );
+            $responseArray = json_decode(json_encode($response), true);
+            // echo "<pre>", print_r($responseArray); die();
+            if (isset($responseArray['GetCaravanMakesResult']['any'])) {
+                    $anyString = $responseArray['GetCaravanMakesResult']['any'];
+                    $anyString = '<root>' . $anyString . '</root>';
+                    $associativeArray = $this->processCaravanMakes($anyString);
+                    if (!empty($associativeArray)) {
+                        return $associativeArray;
+                    } else {
+                        return ['error' => 'Processed array is empty.'];
+                    }
+                } else {
+                    return ['error' => 'Expected keys not found in the response.'];
+                }
+
+        } catch (Exception $e) {
+            return view('error_view', ['error' => $e->getMessage()]);
+        }
+    }
+    public function caravanRegisteredYears()
+    {
+        try {
+            $client = new SoapClient($this->wsdl, $this->options);
+            $response = $client->GetCaravanRegisteredYears();
+            $responseArray = json_decode(json_encode($response), true);
+            // echo "<pre>", print_r($responseArray); die();
+            if (isset($responseArray['GetCaravanRegisteredYearsResult']['any'])) {
+                    $anyString = $responseArray['GetCaravanRegisteredYearsResult']['any'];
+                    $anyString = '<root>' . $anyString . '</root>';
+                    $associativeArray = $this->processCaravanRegisteredYears($anyString);
+                    if (!empty($associativeArray)) {
+                        return $associativeArray;
+                    } else {
+                        return ['error' => 'Processed array is empty.'];
+                    }
+                } else {
+                    return ['error' => 'Expected keys not found in the response.'];
+                }
+
+        } catch (Exception $e) {
+            return view('error_view', ['error' => $e->getMessage()]);
+        }
+    }
+    // motorbikes
+    public function motorbikeDescriptions($make = "AP")
+    {
+        try {
+            $client = new SoapClient($this->wsdl, $this->options);
+            $response = $client->GetMotorbikeDescriptions([
+                "p_LangID" => 'EN',
+                "p_WordCase" => 'PROPERCASE',
+                "p_MotorbikeMake" => $make,
+            ]);
+            $responseArray = json_decode(json_encode($response), true);
+            // echo "<pre>", print_r($responseArray); die();
+            if (isset($responseArray['GetMotorbikeDescriptionsResult']['any'])) {
+                    $anyString = $responseArray['GetMotorbikeDescriptionsResult']['any'];
+                    $anyString = '<root>' . $anyString . '</root>';
+                    $associativeArray = $this->processMotorbikeDescriptions($anyString);
+                    if (!empty($associativeArray)) {
+                        return $associativeArray;
+                    } else {
+                        return ['error' => 'Processed array is empty.'];
+                    }
+                } else {
+                    return ['error' => 'Expected keys not found in the response.'];
+                }
+
+        } catch (Exception $e) {
+            return view('error_view', ['error' => $e->getMessage()]);
+        }
+    }
+    public function motorbikemakes()
+    {
+        try {
+            $client = new SoapClient($this->wsdl, $this->options);
+            $response = $client->GetMotorbikeMakes([
+                "p_LangID" => 'EN',
+                "p_WordCase" => 'PROPERCASE',
+            ]);
+            $responseArray = json_decode(json_encode($response), true);
+            // echo "<pre>", print_r($responseArray); die();
+            if (isset($responseArray['GetMotorbikeMakesResult']['any'])) {
+                    $anyString = $responseArray['GetMotorbikeMakesResult']['any'];
+                    $anyString = '<root>' . $anyString . '</root>';
+                    $associativeArray = $this->processMotorbikeMakes($anyString);
+                    if (!empty($associativeArray)) {
+                        return $associativeArray;
+                    } else {
+                        return ['error' => 'Processed array is empty.'];
+                    }
+                } else {
+                    return ['error' => 'Expected keys not found in the response.'];
+                }
+
+        } catch (Exception $e) {
+            return view('error_view', ['error' => $e->getMessage()]);
+        }
+    }
+    public function motorbikeRegisteredYears()
+    {
+        try {
+            $client = new SoapClient($this->wsdl, $this->options);
+            $response = $client->GetMotorbikeRegisteredYears();
+            $responseArray = json_decode(json_encode($response), true);
+            // echo "<pre>", print_r($responseArray); die();
+            if (isset($responseArray['GetMotorbikeRegisteredYearsResult']['any'])) {
+                    $anyString = $responseArray['GetMotorbikeRegisteredYearsResult']['any'];
+                    $anyString = '<root>' . $anyString . '</root>';
+                    $associativeArray = $this->processMotorbikeRegisteredYears($anyString);
+                    if (!empty($associativeArray)) {
+                        return $associativeArray;
+                    } else {
+                        return ['error' => 'Processed array is empty.'];
+                    }
+                } else {
+                    return ['error' => 'Expected keys not found in the response.'];
+                }
+
+        } catch (Exception $e) {
+            return view('error_view', ['error' => $e->getMessage()]);
+        }
+    }
+    // 
+    public function vehiclePaintTypes()
+    {
+        try {
+            $client = new SoapClient($this->wsdl, $this->options);
+            $response = $client->GetVehiclePaintTypes([
+                "p_LangID" => 'EN',
+                "p_WordCase" => 'PROPERCASE',
+            ]);
+            $responseArray = json_decode(json_encode($response), true);
+            // echo "<pre>", print_r($responseArray); die();
+            if (isset($responseArray['GetVehiclePaintTypesResult']['any'])) {
+                    $anyString = $responseArray['GetVehiclePaintTypesResult']['any'];
+                    $anyString = '<root>' . $anyString . '</root>';
+                    $associativeArray = $this->processVehiclePaintTypes($anyString);
+                    if (!empty($associativeArray)) {
+                        return $associativeArray;
+                    } else {
+                        return ['error' => 'Processed array is empty.'];
+                    }
+                } else {
+                    return ['error' => 'Expected keys not found in the response.'];
+                }
+
+        } catch (Exception $e) {
+            return view('error_view', ['error' => $e->getMessage()]);
+        }
+    }
+    public function vehicleColors()
+    {
+        try {
+            $client = new SoapClient($this->wsdl, $this->options);
+            $response = $client->GetVehicleColours([
+                "p_LangID" => 'EN',
+                "p_WordCase" => 'PROPERCASE',
+            ]);
+            $responseArray = json_decode(json_encode($response), true);
+            // echo "<pre>", print_r($responseArray); die();
+            if (isset($responseArray['GetVehicleColoursResult']['any'])) {
+                    $anyString = $responseArray['GetVehicleColoursResult']['any'];
+                    $anyString = '<root>' . $anyString . '</root>';
+                    $associativeArray = $this->processVehicleColors($anyString);
+                    if (!empty($associativeArray)) {
+                        return $associativeArray;
+                    } else {
+                        return ['error' => 'Processed array is empty.'];
+                    }
+                } else {
+                    return ['error' => 'Expected keys not found in the response.'];
+                }
+
+        } catch (Exception $e) {
+            return view('error_view', ['error' => $e->getMessage()]);
+        }
+    }
+    public function saverAccidentCoverOptionsWithVehicleValues($vehicle_value = '203160')
+    {
+        try {
+            $client = new SoapClient($this->wsdl, $this->options);
+            $response = $client->GetSaverAccidentCoverOptionsWithVehicleValue([
+                "p_LangID" => 'EN',
+                "p_WordCase" => 'PROPERCASE',
+                "p_VehicleValue" => $vehicle_value,
+            ]);
+            $responseArray = json_decode(json_encode($response), true);
+            // echo "<pre>", print_r($responseArray); die();
+            if (isset($responseArray['GetSaverAccidentCoverOptionsWithVehicleValueResult']['any'])) {
+                    $anyString = $responseArray['GetSaverAccidentCoverOptionsWithVehicleValueResult']['any'];
+                    $anyString = '<root>' . $anyString . '</root>';
+                    $associativeArray = $this->processSaverAccidentCoverOptionsWithVehicleValue($anyString);
+                    if (!empty($associativeArray)) {
+                        return $associativeArray;
+                    } else {
+                        return ['error' => 'Processed array is empty.'];
+                    }
+                } else {
+                    return ['error' => 'Expected keys not found in the response.'];
+                }
+
+        } catch (Exception $e) {
+            return view('error_view', ['error' => $e->getMessage()]);
+        }
+    }
+    public function saverAccidentCoverOptions()
+    {
+        try {
+            $client = new SoapClient($this->wsdl, $this->options);
+            $response = $client->GetSaverAccidentCoverOptions([
+                "p_LangID" => 'EN',
+                "p_WordCase" => 'PROPERCASE',
+            ]);
+            $responseArray = json_decode(json_encode($response), true);
+            // echo "<pre>", print_r($responseArray); die();
+            if (isset($responseArray['GetSaverAccidentCoverOptionsResult']['any'])) {
+                    $anyString = $responseArray['GetSaverAccidentCoverOptionsResult']['any'];
+                    $anyString = '<root>' . $anyString . '</root>';
+                    $associativeArray = $this->processSaverAccidentCoverOptions($anyString);
+                    if (!empty($associativeArray)) {
+                        return $associativeArray;
+                    } else {
+                        return ['error' => 'Processed array is empty.'];
+                    }
+                } else {
+                    return ['error' => 'Expected keys not found in the response.'];
+                }
+
+        } catch (Exception $e) {
+            return view('error_view', ['error' => $e->getMessage()]);
+        }
+    }
+    public function motorTrackerOptions()
+    {
+        try {
+            $client = new SoapClient($this->wsdl, $this->options);
+            $response = $client->GetMotorTrackerOptions([
+                "p_LangID" => 'EN',
+                "p_WordCase" => 'PROPERCASE',
+            ]);
+            $responseArray = json_decode(json_encode($response), true);
+            // echo "<pre>", print_r($responseArray); die();
+            if (isset($responseArray['GetMotorTrackerOptionsResult']['any'])) {
+                    $anyString = $responseArray['GetMotorTrackerOptionsResult']['any'];
+                    $anyString = '<root>' . $anyString . '</root>';
+                    $associativeArray = $this->processMotorTrackerOptions($anyString);
                     if (!empty($associativeArray)) {
                         return $associativeArray;
                     } else {
@@ -182,6 +583,32 @@ class Premium extends BaseController
                     $anyString = $responseArray['GetVehicleCarHireOptionsResult']['any'];
                     $anyString = '<root>' . $anyString . '</root>';
                     $associativeArray = $this->processVehicleHireOptions($anyString);
+                    if (!empty($associativeArray)) {
+                        return $associativeArray;
+                    } else {
+                        return ['error' => 'Processed array is empty.'];
+                    }
+                } else {
+                    return ['error' => 'Expected keys not found in the response.'];
+                }
+
+        } catch (Exception $e) {
+            return view('error_view', ['error' => $e->getMessage()]);
+        }
+    }
+    public function vehicleTypes($vehicle_key = 7128089)
+    {
+        try {
+            $client = new SoapClient($this->wsdl, $this->options);
+            $response = $client->GetVehicleType([
+                "p_VehicleKey" => 'EN',
+            ]);
+            $responseArray = json_decode(json_encode($response), true);
+            echo "<pre>", print_r($responseArray); die();
+            if (isset($responseArray['GetVehicleUseItemsResult']['any'])) {
+                    $anyString = $responseArray['GetVehicleUseItemsResult']['any'];
+                    $anyString = '<root>' . $anyString . '</root>';
+                    $associativeArray = $this->processVehicleUse($anyString);
                     if (!empty($associativeArray)) {
                         return $associativeArray;
                     } else {
@@ -865,47 +1292,353 @@ class Premium extends BaseController
      * @param string $anyString
      * @return array
      */
+    // motorbikes
     
-    private function processVehicleType($anyString) {
+    private function processRoofTypes($anyString) {
         // log_message('debug', 'Raw XML content: ' . $anyString);die;
-    $rawXmlContent  = '<root>' . $anyString . '</root>';
+    $anyString = '<root>' . $anyString . '</root>';
     libxml_use_internal_errors(true);
-    // $xml = simplexml_load_string($anyString);
-    try {
-    // Convert the XML into an object
-    $parsedXml = simplexml_load_string($rawXmlContent);
-
-    if ($parsedXml !== false) {
-        $vehicleType = (string) $parsedXml; // Extract the value as a string
-        log_message('debug', 'Parsed Vehicle Type: ' . $vehicleType);
-        return ['VehicleType' => $vehicleType];
-    } else {
-        // Handle XML parsing errors
-        log_message('error', 'Failed to parse XML content: ' . $rawXmlContent);
-        return ['error' => 'Failed to parse XML content.'];
+    $xml = simplexml_load_string($anyString);
+    if ($xml === false) {
+        $errors = libxml_get_errors();
+        foreach ($errors as $error) {
+            log_message('debug', 'XML Error: ' . $error->message);
+        }
+        return [];
     }
-} catch (Exception $e) {
-    // Handle exceptions
-    log_message('error', 'Exception while parsing XML: ' . $e->getMessage());
-    return ['error' => 'Exception while parsing XML: ' . $e->getMessage()];
+    $xml->registerXPathNamespace('diffgr', 'urn:schemas-microsoft-com:xml-diffgram-v1');
+    $roof_types = $xml->xpath('//diffgr:diffgram/DocumentElement/RoofTypes');
+    $array = [];
+    foreach ($roof_types as $type) {
+        $array[] = [
+            'Value' => (string) $type->Value,
+            'Description' => (string) $type->Description,
+        ];
+    }
+    return $array;
 }
-    // if ($xml === false) {
-    //     $errors = libxml_get_errors();
-    //     foreach ($errors as $error) {
-    //         log_message('debug', 'XML Error: ' . $error->message);
-    //     }
-    //     return [];
-    // }
-    // $xml->registerXPathNamespace('diffgr', 'urn:schemas-microsoft-com:xml-diffgram-v1');
-    // $insured_values = $xml->xpath('//diffgr:diffgram/DocumentElement/InsuredValues');
-    // $array = [];
-    // foreach ($insured_values as $value) {
-    //     $array[] = [
-    //         'Value' => (string) $value->Value,
-    //         'Description' => (string) $value->Description,
-    //     ];
-    // }
-    // return $array;
+    private function processAreaTypes($anyString) {
+        // log_message('debug', 'Raw XML content: ' . $anyString);die;
+    $anyString = '<root>' . $anyString . '</root>';
+    libxml_use_internal_errors(true);
+    $xml = simplexml_load_string($anyString);
+    if ($xml === false) {
+        $errors = libxml_get_errors();
+        foreach ($errors as $error) {
+            log_message('debug', 'XML Error: ' . $error->message);
+        }
+        return [];
+    }
+    $xml->registerXPathNamespace('diffgr', 'urn:schemas-microsoft-com:xml-diffgram-v1');
+    $area_types = $xml->xpath('//diffgr:diffgram/DocumentElement/AreaTypes');
+    $array = [];
+    foreach ($area_types as $type) {
+        $array[] = [
+            'Value' => (string) $type->Value,
+            'Description' => (string) $type->Description,
+        ];
+    }
+    return $array;
+}
+    private function processBuildingStructures($anyString) {
+        // log_message('debug', 'Raw XML content: ' . $anyString);die;
+    $anyString = '<root>' . $anyString . '</root>';
+    libxml_use_internal_errors(true);
+    $xml = simplexml_load_string($anyString);
+    if ($xml === false) {
+        $errors = libxml_get_errors();
+        foreach ($errors as $error) {
+            log_message('debug', 'XML Error: ' . $error->message);
+        }
+        return [];
+    }
+    $xml->registerXPathNamespace('diffgr', 'urn:schemas-microsoft-com:xml-diffgram-v1');
+    $building_structures = $xml->xpath('//diffgr:diffgram/DocumentElement/BuildingStructure');
+    $array = [];
+    foreach ($building_structures as $structure) {
+        $array[] = [
+            'Value' => (string) $structure->Value,
+            'Description' => (string) $structure->Description,
+        ];
+    }
+    return $array;
+}
+    private function processTrailerMakes($anyString) {
+        // log_message('debug', 'Raw XML content: ' . $anyString);die;
+    $anyString = '<root>' . $anyString . '</root>';
+    libxml_use_internal_errors(true);
+    $xml = simplexml_load_string($anyString);
+    if ($xml === false) {
+        $errors = libxml_get_errors();
+        foreach ($errors as $error) {
+            log_message('debug', 'XML Error: ' . $error->message);
+        }
+        return [];
+    }
+    $xml->registerXPathNamespace('diffgr', 'urn:schemas-microsoft-com:xml-diffgram-v1');
+    $trailer_makes = $xml->xpath('//diffgr:diffgram/DocumentElement/TrailerMakes');
+    $array = [];
+    foreach ($trailer_makes as $make) {
+        $array[] = [
+            'Value' => (string) $make->Value,
+            'Description' => (string) $make->Description,
+        ];
+    }
+    return $array;
+}
+    private function processTrailerRegisteredYears($anyString) {
+        // log_message('debug', 'Raw XML content: ' . $anyString);die;
+    $anyString = '<root>' . $anyString . '</root>';
+    libxml_use_internal_errors(true);
+    $xml = simplexml_load_string($anyString);
+    if ($xml === false) {
+        $errors = libxml_get_errors();
+        foreach ($errors as $error) {
+            log_message('debug', 'XML Error: ' . $error->message);
+        }
+        return [];
+    }
+    $xml->registerXPathNamespace('diffgr', 'urn:schemas-microsoft-com:xml-diffgram-v1');
+    $trailer_years = $xml->xpath('//diffgr:diffgram/DocumentElement/TrailerYears');
+    $array = [];
+    foreach ($trailer_years as $year) {
+        $array[] = [
+            'Value' => (string) $year->Value,
+            'Description' => (string) $year->Description,
+        ];
+    }
+    return $array;
+}
+    private function processCaravanMakes($anyString) {
+        // log_message('debug', 'Raw XML content: ' . $anyString);die;
+    $anyString = '<root>' . $anyString . '</root>';
+    libxml_use_internal_errors(true);
+    $xml = simplexml_load_string($anyString);
+    if ($xml === false) {
+        $errors = libxml_get_errors();
+        foreach ($errors as $error) {
+            log_message('debug', 'XML Error: ' . $error->message);
+        }
+        return [];
+    }
+    $xml->registerXPathNamespace('diffgr', 'urn:schemas-microsoft-com:xml-diffgram-v1');
+    $caravan_makes = $xml->xpath('//diffgr:diffgram/DocumentElement/CaravanMakes');
+    $array = [];
+    foreach ($caravan_makes as $make) {
+        $array[] = [
+            'Value' => (string) $make->Value,
+            'Description' => (string) $make->Description,
+        ];
+    }
+    return $array;
+}
+    private function processCaravanRegisteredYears($anyString) {
+        // log_message('debug', 'Raw XML content: ' . $anyString);die;
+    $anyString = '<root>' . $anyString . '</root>';
+    libxml_use_internal_errors(true);
+    $xml = simplexml_load_string($anyString);
+    if ($xml === false) {
+        $errors = libxml_get_errors();
+        foreach ($errors as $error) {
+            log_message('debug', 'XML Error: ' . $error->message);
+        }
+        return [];
+    }
+    $xml->registerXPathNamespace('diffgr', 'urn:schemas-microsoft-com:xml-diffgram-v1');
+    $caravan_years = $xml->xpath('//diffgr:diffgram/DocumentElement/CaravanYears');
+    $array = [];
+    foreach ($caravan_years as $year) {
+        $array[] = [
+            'Value' => (string) $year->Value,
+            'Description' => (string) $year->Description,
+        ];
+    }
+    return $array;
+}
+    private function processMotorbikeDescriptions($anyString) {
+        // log_message('debug', 'Raw XML content: ' . $anyString);die;
+    $anyString = '<root>' . $anyString . '</root>';
+    libxml_use_internal_errors(true);
+    $xml = simplexml_load_string($anyString);
+    if ($xml === false) {
+        $errors = libxml_get_errors();
+        foreach ($errors as $error) {
+            log_message('debug', 'XML Error: ' . $error->message);
+        }
+        return [];
+    }
+    $xml->registerXPathNamespace('diffgr', 'urn:schemas-microsoft-com:xml-diffgram-v1');
+    $motorbike_makes = $xml->xpath('//diffgr:diffgram/DocumentElement/MotorbikeMakes');
+    $array = [];
+    foreach ($motorbike_makes as $make) {
+        $array[] = [
+            'Value' => (string) $make->Value,
+            'Description' => (string) $make->Description,
+        ];
+    }
+    return $array;
+}
+    private function processMotorbikeMakes($anyString) {
+        // log_message('debug', 'Raw XML content: ' . $anyString);die;
+    $anyString = '<root>' . $anyString . '</root>';
+    libxml_use_internal_errors(true);
+    $xml = simplexml_load_string($anyString);
+    if ($xml === false) {
+        $errors = libxml_get_errors();
+        foreach ($errors as $error) {
+            log_message('debug', 'XML Error: ' . $error->message);
+        }
+        return [];
+    }
+    $xml->registerXPathNamespace('diffgr', 'urn:schemas-microsoft-com:xml-diffgram-v1');
+    $motorbike_makes = $xml->xpath('//diffgr:diffgram/DocumentElement/MotorbikeMakes');
+    $array = [];
+    foreach ($motorbike_makes as $make) {
+        $array[] = [
+            'Value' => (string) $make->Value,
+            'Description' => (string) $make->Description,
+        ];
+    }
+    return $array;
+}
+    private function processMotorbikeRegisteredYears($anyString) {
+        // log_message('debug', 'Raw XML content: ' . $anyString);die;
+    $anyString = '<root>' . $anyString . '</root>';
+    libxml_use_internal_errors(true);
+    $xml = simplexml_load_string($anyString);
+    if ($xml === false) {
+        $errors = libxml_get_errors();
+        foreach ($errors as $error) {
+            log_message('debug', 'XML Error: ' . $error->message);
+        }
+        return [];
+    }
+    $xml->registerXPathNamespace('diffgr', 'urn:schemas-microsoft-com:xml-diffgram-v1');
+    $motorbike_years = $xml->xpath('//diffgr:diffgram/DocumentElement/MotorbikeYears');
+    $array = [];
+    foreach ($motorbike_years as $year) {
+        $array[] = [
+            'Value' => (string) $year->Value,
+            'Description' => (string) $year->Description,
+        ];
+    }
+    return $array;
+}
+    // 
+    private function processVehiclePaintTypes($anyString) {
+        // log_message('debug', 'Raw XML content: ' . $anyString);die;
+    $anyString = '<root>' . $anyString . '</root>';
+    libxml_use_internal_errors(true);
+    $xml = simplexml_load_string($anyString);
+    if ($xml === false) {
+        $errors = libxml_get_errors();
+        foreach ($errors as $error) {
+            log_message('debug', 'XML Error: ' . $error->message);
+        }
+        return [];
+    }
+    $xml->registerXPathNamespace('diffgr', 'urn:schemas-microsoft-com:xml-diffgram-v1');
+    $paint_types = $xml->xpath('//diffgr:diffgram/DocumentElement/VehiclePaintTypes');
+    $array = [];
+    foreach ($paint_types as $paint) {
+        $array[] = [
+            'Value' => (string) $paint->Value,
+            'Description' => (string) $paint->Description,
+        ];
+    }
+    return $array;
+}
+    private function processVehicleColors($anyString) {
+        // log_message('debug', 'Raw XML content: ' . $anyString);die;
+    $anyString = '<root>' . $anyString . '</root>';
+    libxml_use_internal_errors(true);
+    $xml = simplexml_load_string($anyString);
+    if ($xml === false) {
+        $errors = libxml_get_errors();
+        foreach ($errors as $error) {
+            log_message('debug', 'XML Error: ' . $error->message);
+        }
+        return [];
+    }
+    $xml->registerXPathNamespace('diffgr', 'urn:schemas-microsoft-com:xml-diffgram-v1');
+    $vehicle_colors = $xml->xpath('//diffgr:diffgram/DocumentElement/VehicleColours');
+    $array = [];
+    foreach ($vehicle_colors as $color) {
+        $array[] = [
+            'Value' => (string) $color->Value,
+            'Description' => (string) $color->Description,
+        ];
+    }
+    return $array;
+}
+    private function processSaverAccidentCoverOptionsWithVehicleValue($anyString) {
+        // log_message('debug', 'Raw XML content: ' . $anyString);die;
+    $anyString = '<root>' . $anyString . '</root>';
+    libxml_use_internal_errors(true);
+    $xml = simplexml_load_string($anyString);
+    if ($xml === false) {
+        $errors = libxml_get_errors();
+        foreach ($errors as $error) {
+            log_message('debug', 'XML Error: ' . $error->message);
+        }
+        return [];
+    }
+    $xml->registerXPathNamespace('diffgr', 'urn:schemas-microsoft-com:xml-diffgram-v1');
+    $cover_options = $xml->xpath('//diffgr:diffgram/DocumentElement/AccidentCoverOptions');
+    $array = [];
+    foreach ($cover_options as $option) {
+        $array[] = [
+            'Value' => (string) $option->Value,
+            'Description' => (string) $option->Description,
+        ];
+    }
+    return $array;
+}
+    private function processSaverAccidentCoverOptions($anyString) {
+        // log_message('debug', 'Raw XML content: ' . $anyString);die;
+    $anyString = '<root>' . $anyString . '</root>';
+    libxml_use_internal_errors(true);
+    $xml = simplexml_load_string($anyString);
+    if ($xml === false) {
+        $errors = libxml_get_errors();
+        foreach ($errors as $error) {
+            log_message('debug', 'XML Error: ' . $error->message);
+        }
+        return [];
+    }
+    $xml->registerXPathNamespace('diffgr', 'urn:schemas-microsoft-com:xml-diffgram-v1');
+    $cover_options = $xml->xpath('//diffgr:diffgram/DocumentElement/AccidentCoverOptions');
+    $array = [];
+    foreach ($cover_options as $option) {
+        $array[] = [
+            'Value' => (string) $option->Value,
+            'Description' => (string) $option->Description,
+        ];
+    }
+    return $array;
+}
+    private function processMotorTrackerOptions($anyString) {
+        // log_message('debug', 'Raw XML content: ' . $anyString);die;
+    $anyString = '<root>' . $anyString . '</root>';
+    libxml_use_internal_errors(true);
+    $xml = simplexml_load_string($anyString);
+    if ($xml === false) {
+        $errors = libxml_get_errors();
+        foreach ($errors as $error) {
+            log_message('debug', 'XML Error: ' . $error->message);
+        }
+        return [];
+    }
+    $xml->registerXPathNamespace('diffgr', 'urn:schemas-microsoft-com:xml-diffgram-v1');
+    $device_types = $xml->xpath('//diffgr:diffgram/DocumentElement/AntiTheftDeviceTypes');
+    $array = [];
+    foreach ($device_types as $device) {
+        $array[] = [
+            'Value' => (string) $device->Value,
+            'Description' => (string) $device->Description,
+        ];
+    }
+    return $array;
 }
     private function processMotorInsuredItems($anyString) {
         // log_message('debug', 'Raw XML content: ' . $anyString);die;
