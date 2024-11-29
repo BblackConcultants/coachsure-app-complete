@@ -7,6 +7,7 @@ use Exception;
 
 class Premium extends BaseController
 {
+    protected $premium_sandbox_wsdl = 'https://api-uat.tihsa.co.za/QuickQuotes/APIService.asmx?WSDL';
     protected $wsdl = 'https://api-uat.tihsa.co.za/QuickQuotes/GenericControls.asmx?wsdl';
     protected $options;
 
@@ -77,6 +78,39 @@ class Premium extends BaseController
         log_message('debug', 'Data passed to view: ' . json_encode($vehicle_types));die;
         
         // return view('wsdl_view', ['data' => $marital_statuses]);
+    }
+    public function calculateMotorPremium(){
+        try {
+            $client = new SoapClient($this->premium_sandbox_wsdl); 
+            $response = $client->GetNewSessionID();
+            $sessionID = $response->GetNewSessionIDResult; 
+        } catch (Exception $e) {
+            echo "Error: " . $e->getMessage();
+        }
+
+        // calculate the motor premium
+        try {
+            $motorPremiumRequest = [
+                'SessionID' => $sessionID, 
+                'ReferenceNo' => '10350479', 
+                'VehicleYear' => '2011', 
+                'VehicleMNMCode' => '02090460', 
+                'VehicleKey' => '02090460', 
+                'InsuredValue' => 0, 
+                'VehicleSeqNo' => 0, 
+            ];
+
+            // Call the CalculatePremium SOAP method
+            $response = $soapClient->CalculatePremium($premiumRequest);
+
+            // Extract the premium from the response
+            $premium = $response->CalculatePremiumResult; // Adjust based on the actual response structure
+            echo "Premium Amount: " . $premium . PHP_EOL;
+        } catch (Exception $e) {
+            die("Error calculating premium: " . $e->getMessage());
+        }
+        // 
+
     }
     public function methodList (){
         $soapClient = new SoapClient($this->wsdl);
